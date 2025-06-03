@@ -1,0 +1,5 @@
+apache-airflow-providers-mongo==3.3.0
+pandas~=2.2.3
+requests~=2.32.3
+boto3~=1.26.160
+apache-airflow~=3.0.0
