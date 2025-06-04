@@ -4,6 +4,9 @@
 
 This project is a comprehensive data pipeline for processing data from the NASA EPIC API (DSCOVR satellite). The pipeline is built following the principles of the Data Engineering Lifecycle, as described in the book "Fundamentals of Data Engineering" by Joe Reis and Matt Housley.
 
+![Пример пайплайна](shema_image/img_1.png)
+shema data pipline
+
 ## 📦 Tech Stack
 
 - **Apache Airflow 3.0:** Orchestration of workflows.
