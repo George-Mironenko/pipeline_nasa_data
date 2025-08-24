@@ -9,6 +9,7 @@ from airflow.exceptions import AirflowSkipException
 from airflow.decorators import task
 from airflow.providers.mongo.sensors.mongo import MongoHook
 
+from app.loging_etl import logger
 
 # Получаем API-ключ из переменных Airflow
 API_KEY = Variable.get("data_nasa_api")
@@ -38,13 +39,14 @@ with DAG(
         query_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime('%Y-%m-%d')
         # Создаём url вчерашнего дня
         url = f"https://api.nasa.gov/EPIC/api/natural/date/{query_date}?api_key={API_KEY}"
-        print(query_date)
 
         try:
             response = requests.get(url)
 
             if response.status_code == 200:
                 data_json = response.json()
+                logger.debug("Успешное преобразование в json")
+
                 rows = []
                 if data_json:
                     for i in data_json:
@@ -74,15 +76,19 @@ with DAG(
 
                     # Удаляем колонку image
                     df_mongo = df.drop(columns=['image'])
+                    logger.debug("Удалили колонку image")
 
                     # Приводим к дате (без времени)
                     df_mongo['date'] = pd.to_datetime(df_mongo['date']).dt.date
+                    logger.debug("Привели к нужному формату даты.")
 
                     # Группируем по дате и считаем среднее
                     df_mongo = df_mongo.groupby('date').mean(numeric_only=True).reset_index()
+                    logger.debug("Сгрупировали и сочитали среднее")
 
                     # Приводим дату к строке для MongoDB
                     df_mongo['date'] = df_mongo['date'].astype(str)
+                    logger.debug("Привели дату к строке для MongoDB")
 
                     # Готовим к возврату
                     return {
@@ -91,14 +97,14 @@ with DAG(
                     }
 
                 else:
-                    print(f"Данных за {query_date} пока нет.")
+                    logger.error(f"Данных за {query_date} пока нет.")
                     raise AirflowSkipException("Данных пока нет. Пропуск.")
-
             else:
+                logger.error("Ошибка при запросе к API")
                 raise Exception(f"Ошибка при запросе к API: {response.status_code}")
 
         except Exception as error:
-            print(f"Ошибка при обработке данных: {error}")
+            logger.error(f"Ошибка при обработке данных: {error}")
             raise
 
 
@@ -128,6 +134,7 @@ with DAG(
 
         # Выполнение запроса на создание таблицы
         cursor.execute(create_table_query)
+        logger.debug("У спешно создали таблицы в бд")
 
         # SQL-запрос для вставки данных
         insert_sql = """
@@ -145,18 +152,20 @@ with DAG(
                 record['x_sun'], record['y_sun'], record['z_sun'],
                 record['image']
             ))
+        logger.debug("Успешно вставили данные")
 
         # Сохранение изменений
         conn.commit()
         cursor.close()
         conn.close()
+        logger.info("Успешное сохранение в posgresql")
 
 
     @task
     def load_to_mongodb(data: dict):
         records = data.get("mongo", [])
         if not records:
-            print("Нет данных для загрузки в MongoDB")
+            logger.error("Нет данных для загрузки в MongoDB")
             return
 
         try:
@@ -165,10 +174,10 @@ with DAG(
             db = client['airflow']
             collection = db['nasa_data']
             result = collection.insert_many(records)
-            print(f"Загружено записей в MongoDB: {len(result.inserted_ids)}")
+            logger.info(f"Загружено записей в MongoDB: {len(result.inserted_ids)}")
 
         except Exception as e:
-            print(f"Ошибка при записи в MongoDB: {str(e)}")
+            logger.error(f"Ошибка при записи в MongoDB: {str(e)}")
             raise
 
     # Выполняем задачи

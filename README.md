@@ -17,6 +17,7 @@
 - **Selectel S3:** Облачное хранилище для экспортированных данных CSV.
 - **Pandas:** Преобразование и обработка данных.
 - **PySpark:** Обработка данных в Data Lake (CSV-файлов из S3).
+- **logging:** Для логирования.
 
 ## 🔧 Как работает пайплайн
 
@@ -49,7 +50,7 @@
 1. **Клонируйте репозиторий:**
 
 ```bash
-git clone https://github.com/georgiymironenko/data-nasa-pipeline.git
+git https://github.com/George-Mironenko/pipeline_nasa_data.git
 cd data-nasa-pipeline
 ```
 

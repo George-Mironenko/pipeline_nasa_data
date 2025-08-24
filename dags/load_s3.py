@@ -8,6 +8,8 @@ from airflow.models import Variable
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.sdk import DAG
 
+from app.loging_etl import logger
+
 
 default_args = {
     'owner': 'airflow2',
@@ -34,21 +36,25 @@ with DAG(
             hook = PostgresHook(postgres_conn_id='data_nasa_base')
             conn = hook.get_conn()
             cursor = conn.cursor()
+            logger.debug("Успешно подлючились к базе данных")
 
             # Получаем данные из базы данных
             cursor.execute("SELECT * FROM public.nasa_epic_data;")
             data = cursor.fetchall()
+            logger.debug("Успешно получили данные из бд")
 
             # Очищаем таблицу для следующего года
             cursor.execute("DELETE FROM public.nasa_epic_data;")
+            logger.debug("Успешно удалили данные дял следующего года")
 
             conn.commit()
             cursor.close()
             conn.close()
+            logger.info("Успешно получили данные из posgres")
 
             return data
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        except Exception as error:
+            logger.error(f"An error occurred: {error}")
             raise
 
     @task
@@ -67,13 +73,16 @@ with DAG(
                 aws_access_key_id=Variable.get("SELECTEL_ACCESS_KEY"),
                 aws_secret_access_key=Variable.get("SELECTEL_SECRET_KEY")
             )
+            logger.debug("Успешно подключились к S3 хранилищу")
+
             bucket_name = 'nasa'
             file_name = f'data___nasa_{datetime.now().year}.csv'
 
             # Загрузка данных в Selectel Object Storage
             s3.put_object(Bucket=bucket_name, Key=file_name, Body=csv_data)
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.info("Сохранили файл в S3")
+        except Exception as error:
+            logger.error(f"An error occurred: {error}")
             raise
 
 
