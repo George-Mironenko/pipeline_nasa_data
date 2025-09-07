@@ -139,7 +139,3 @@ https://api.nasa.gov/EPIC/archive/natural/2019/05/30/png/epic_1b_20190530011359.
 
 **Georgiy Mironenko**, 18 years old  
 Project inspired by *"Fundamentals of Data Engineering"*
-
-## 📝 License
-
-This project is licensed under the **MIT License**.
